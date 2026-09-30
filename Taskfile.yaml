@@ -1,0 +1,37 @@
+version: '3'
+
+vars:
+  APP_NAME: sso-app
+  MAIN_PATH: ./cmd/sso/main.go
+  CONFIG_PATH: ./config/local.yaml  # Путь к дефолтному конфигу
+  MIGRATIONS_DIR: ./migrations      # Директория с миграциями
+  MIGRATOR_PATH: ./cmd/migrator/main.go # Мигратор
+  DB_URL: "postgres://postgres:postgres@localhost:1290/postgres?sslmode=disable"
+
+tasks:
+
+  # 1.ЗАПУСК ПРИЛОЖЕНИЯ
+  run:
+    desc: Запустить приложение с указанием пути к конфигурационному файлу
+    summary: |
+      Запускает Go-приложение. Можно передать свой путь к конфигу через переменную:
+      task run -- ./config/prod.yaml
+    cmds:
+      - go run {{.MAIN_PATH}} --config={{.CLI_ARGS | default .CONFIG_PATH}}
+
+  # 2.ЗАПУСК ТЕСТОВ
+  test:
+    desc: Запустить все тесты в проекте
+    cmds:
+      - go test -v ./tests/...
+
+  # 3.МИГРАЦИИ
+  migrate:up:
+    desc: Накатать все новые миграции
+    cmds:
+      - go run {{.MIGRATOR_PATH}} --db-url="{{.DB_URL}}" --migrations-path="{{.MIGRATIONS_DIR}}"
+
+  migrate:down:
+    desc: Откатить все миграции назад
+    cmds:
+      - go run {{.MIGRATOR_PATH}} --db-url="{{.DB_URL}}" --migrations-path="{{.MIGRATIONS_DIR}}" --down
